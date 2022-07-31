@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:14.4-alpine
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  web:
+    build: .
+    volumes:
+      - .:/usr/src/craft/
+    command:
+      python manage.py runserver 0.0.0.0:8080
+    env_file:
+      - .env
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis_data:/var/lib/redis/data
+
+  celery:
+    build: .
+    command: celery -A craft worker -l info
+    volumes:
+      - .:/usr/src/craft/
+    env_file:
+      - .env
+    depends_on:
+      - web
+
+volumes:
+  db_data:
+  redis_data:
